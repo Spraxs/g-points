@@ -1,0 +1,16 @@
+<h2>Recently Added Rewards</h2>
+<div>
+    <% rewards.forEach(reward => { %>
+        <a href="/rewards/<%= reward.id %>">
+            <img height="150" width="100" src="<%= reward.coverImagePath %>" alt="">
+            <p><%= reward.name %></p>
+        </a>
+    <% }) %> 
+</div>
+
+<h2>Leaderboards</h2>
+<div>
+    <% users.forEach(user => { %>
+        <p><%= user.userName %> - <%= user.points %> 💯</p>
+    <% }) %> 
+</div>

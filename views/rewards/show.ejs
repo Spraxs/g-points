@@ -1,0 +1,7 @@
+<h2><%= reward.name %></h2>
+<img height="150" width="100" src="<%= reward.coverImagePath %>" alt="">
+<div>Price: <%= reward.cost %> 💯</div>
+<div>Description: <%= reward.description %></div>
+
+<a href="/rewards/<%= reward.id %>/edit">Edit</a>
+<%- include('../partials/deleteForm', {url: `/rewards/${reward.id}`}) %>

@@ -1,0 +1,19 @@
+<div>
+    <label>Name</label>
+    <input type="text" name="name" value="<%= reward.name %>">
+</div>
+
+<div>
+    <label>Description</label>
+    <textarea name="description"><%= reward.description %> </textarea>
+</div>
+
+<div>
+    <label>Cost</label>
+    <input type="number" name="cost" min="1" value="<%= reward.cost %>">
+</div>
+
+<div>
+    <label>Cover</label>
+    <input type="file" name="cover" class="filepond">
+</div>
