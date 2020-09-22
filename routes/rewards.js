@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
 const Reward = require('../models/reward')
-const Author = require('../models/author')
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif']
 
 // All Rewards Route

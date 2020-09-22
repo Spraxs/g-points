@@ -1,11 +1,14 @@
 const { Telegraf } = require('telegraf')
 const Telegram = require('telegraf/telegram')
+const crypto = require('crypto');
 const tgresolve = require("tg-resolve");
 const points = '💯';
 
 console.log(process.env.BOT_TOKEN);
 
 const User = require('./models/user')
+const Session = require('./models/session');
+const { nextTick } = require('process');
 
 const tBot = new Telegram(process.env.BOT_TOKEN)
 const bot = new Telegraf(process.env.BOT_TOKEN)
@@ -28,6 +31,35 @@ bot.command('register', (ctx) => {
     registerUser(user, (message) => {
         tBot.sendMessage(user.id, message);
     })
+})
+
+bot.command('rewards', async (ctx) => {
+    const tUser = ctx.update.message.from;
+
+    try {
+
+        getCurrentSession(tUser, (currentSession, user) => {
+
+            if (currentSession) {
+                tBot.sendMessage(user.userId, "Current session found: " + process.env.WEBSITE_DOMAIN + "auth?token=" + currentSession.token)
+                return;
+            }
+
+            // If there is no current session
+            createNewSession(user, async (session) => {
+                tBot.sendMessage(user.userId, "New session created: " + process.env.WEBSITE_DOMAIN + "auth?token=" + session.token)
+            })
+            
+
+        }, (noUserMsg) => {
+
+            tBot.sendMessage(tUser.id, noUserMsg)
+        })
+
+    } catch (e) {
+
+    }
+
 })
 
 bot.entity("mention", async (ctx) => {
@@ -104,13 +136,65 @@ async function registerUser(tUser, callback) {
         console.log("already registered user")
 
         if (callback) callback(`Je staat al in ons systeem! ${points}`)
-    } catch(e) {
+    } catch (e) {
         console.log("Error while creating user " + tUser.username);
  
         console.log(e);
 
         if (callback) callback("Er ging iets mis tijdens het registreren, probeer het later nog eens!")
     }
+}
+
+async function getCurrentSession(tUser, callback, noUserCallback) {
+
+    let user;
+
+    try {
+        user = await User.findOne({userId: tUser.id});
+
+        if (!user) {
+            noUserCallback("No user found, register first!")
+            return;
+        }
+
+    } catch (e) {
+        console.log(e)
+    }
+
+    try {
+        const currentSession = await Session.findOne({user: user.id})
+
+        if (callback) {
+            if (currentSession) callback(currentSession, user)
+            else callback(null, user)
+        }
+        
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+async function createNewSession(user, callback) {
+    crypto.randomBytes(32, async (err, buf) => {
+        if (err) throw err;
+
+
+        const session = new Session({
+            user: user,
+            token: buf.toString('hex')
+        })
+    
+        try {
+
+            const newSession = await session.save()
+
+            if (callback) callback(newSession)
+        } catch (e) {
+
+            console.log(e)
+        }
+    })
+
 }
 
 bot.launch()
