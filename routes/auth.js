@@ -1,10 +1,13 @@
 const express = require('express')
 const router = express.Router()
-const Session = require('../models/session')
+const TokenCache = require('../cache/TokenCache')
 
 router.get('/', async (req, res) => {
 
-    if (req.session.session) {
+    const sessionUserId = req.session.userId;
+
+    // Check if sessions is active
+    if (sessionUserId && TokenCache.getTokenByUserId(sessionUserId)) {
         res.redirect("/")
         return;
     }
@@ -13,20 +16,21 @@ router.get('/', async (req, res) => {
 
     if (givenToken) {
 
-        try {
-            const session = await Session.findOne({token: givenToken}).exec()
 
-            if (session) {
-                req.session.session = session;
+        const token = TokenCache.getTokenByToken(givenToken);
 
-                res.redirect("/")
-            } else {
-                res.send("This token does not match")
-            }
+        if (token) {
 
-        } catch (e) {
-            console.log(e)
+            console.log("Matched token!")
+
+            req.session.userId = token.userId;
+
+            res.redirect("/")
+        } else {
+            res.send("This token does not match")
         }
+
+
     } else {
         res.send("NO TOKEN")
     }

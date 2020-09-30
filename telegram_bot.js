@@ -1,13 +1,13 @@
 const { Telegraf } = require('telegraf')
 const Telegram = require('telegraf/telegram')
-const crypto = require('crypto');
 const tgresolve = require("tg-resolve");
 const points = '💯';
+
+const TokenCache = require('./cache/TokenCache')
 
 console.log(process.env.BOT_TOKEN);
 
 const User = require('./models/user')
-const Session = require('./models/session');
 const { nextTick } = require('process');
 
 const tBot = new Telegram(process.env.BOT_TOKEN)
@@ -38,16 +38,16 @@ bot.command('rewards', async (ctx) => {
 
     try {
 
-        getCurrentSession(tUser, (currentSession, user) => {
+        getCurrentToken(tUser, (currentToken, user) => {
 
-            if (currentSession) {
-                tBot.sendMessage(user.userId, "Current session found: " + process.env.WEBSITE_DOMAIN + "auth?token=" + currentSession.token)
+            if (currentToken) {
+                tBot.sendMessage(user.telegramId, "Current session found: " + process.env.WEBSITE_DOMAIN + "auth?token=" + currentToken.token)
                 return;
             }
 
             // If there is no current session
-            createNewSession(user, async (session) => {
-                tBot.sendMessage(user.userId, "New session created: " + process.env.WEBSITE_DOMAIN + "auth?token=" + session.token)
+            TokenCache.createToken(user.id, (newToken) => {
+                tBot.sendMessage(user.telegramId, "New session created: " + process.env.WEBSITE_DOMAIN + "auth?token=" + newToken.token)
             })
             
 
@@ -81,7 +81,7 @@ bot.entity("mention", async (ctx) => {
 
     try {
         const givenUser = await User.findOne({userName: name})
-        const user = await User.findOne({userId: tUser.id})
+        const user = await User.findOne({telegramId: tUser.id})
 
         if (!user) {
             tBot.sendMessage(tUser.id, "Je bent nog niet geregistreerd! Je kan jezelf registreren met '/register'!");
@@ -93,7 +93,7 @@ bot.entity("mention", async (ctx) => {
             return;
         }
 
-        tBot.sendMessage(givenUser.userId, "Je hebt een g-punt onvangen! " + `${points}`)
+        tBot.sendMessage(givenUser.telegramId, "Je hebt een g-punt onvangen! " + `${points}`)
         
          console.log("Found user " + givenUser.userName);
 
@@ -109,7 +109,7 @@ bot.entity("mention", async (ctx) => {
 async function registerUser(tUser, callback) {
 
     try {
-        const user = await User.findOne({userId: tUser.id})
+        const user = await User.findOne({telegramId: tUser.id})
         
          console.log(user);
 
@@ -117,7 +117,7 @@ async function registerUser(tUser, callback) {
 
             // Create new user
             const newUser = new User({
-                userId: tUser.id,
+                telegramId: tUser.id,
                 points: 0,
                 totalPoints: 0,
                 userName: tUser.username,
@@ -145,12 +145,12 @@ async function registerUser(tUser, callback) {
     }
 }
 
-async function getCurrentSession(tUser, callback, noUserCallback) {
+async function getCurrentToken(tUser, callback, noUserCallback) {
 
     let user;
 
     try {
-        user = await User.findOne({userId: tUser.id});
+        user = await User.findOne({telegramId: tUser.id});
 
         if (!user) {
             noUserCallback("No user found, register first!")
@@ -161,40 +161,12 @@ async function getCurrentSession(tUser, callback, noUserCallback) {
         console.log(e)
     }
 
-    try {
-        const currentSession = await Session.findOne({user: user.id})
+    const token = TokenCache.getTokenByUserId(user.id)
 
-        if (callback) {
-            if (currentSession) callback(currentSession, user)
-            else callback(null, user)
-        }
-        
-    } catch (e) {
-        console.log(e)
+    if (callback) {
+        if (token) callback(token, user)
+        else callback(null, user)
     }
-}
-
-async function createNewSession(user, callback) {
-    crypto.randomBytes(32, async (err, buf) => {
-        if (err) throw err;
-
-
-        const session = new Session({
-            user: user,
-            token: buf.toString('hex')
-        })
-    
-        try {
-
-            const newSession = await session.save()
-
-            if (callback) callback(newSession)
-        } catch (e) {
-
-            console.log(e)
-        }
-    })
-
 }
 
 bot.launch()

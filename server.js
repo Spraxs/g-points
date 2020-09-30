@@ -2,6 +2,8 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
 
+const User = require('./models/user')
+
 const express = require('express')
 const session = require('express-session')
 const app = express()
@@ -21,10 +23,12 @@ app.set('layout', 'layouts/layout')
 app.use(expressLayouts)
 app.use(methodOverride('_method'))
 app.use(express.static('public'))
-app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 60000 }}))
+
+app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 1000 * 60 * 10 }}))
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: false }))
 
 const mongoose = require('mongoose')
+const TokenCache = require('./cache/TokenCache')
 
 mongoose.connect(process.env.DATABASE_URL, {
     useNewUrlParser: true, useUnifiedTopology: true })
@@ -37,16 +41,24 @@ db.once('open', () => console.log('Connected to Mongoose'))
 // Authentication first, otherwise will have no access because of auth check middleware
 app.use("/auth", authRouter)
 app.use('/', isAuthenticated, indexRouter)
-app.use('/rewards',  isAuthenticated, rewardRouter)
+app.use('/rewards', isAuthenticated, rewardRouter)
 
 app.listen(process.env.PORT || 3000)
 
 require('./telegram_bot')
 
-function isAuthenticated(req, res, next) {
-    if (req.session.session) {
+async function isAuthenticated(req, res, next) {
+
+    TokenCache.removeInActiveTokens();
+
+    const sessionUserId = req.session.userId;
+
+    const token = TokenCache.getTokenByUserId(sessionUserId);
+
+    if (sessionUserId && token) {
+        token.keepAlive();
         return next();
     }
 
-    res.send("Cannot access this page")
+    res.send("Can't access this page!")
 }
