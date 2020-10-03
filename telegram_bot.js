@@ -27,7 +27,19 @@ bot.catch((err, ctx) => {
 // bot.on('sticker', (ctx) => ctx.reply('👍'))
 // bot.hears('hi', (ctx) => ctx.reply('Hey there'))
 bot.command('register', (ctx) => {
+    const tUser = ctx.update.message.from;
+
+    if (!tUser.username) {
+        ctx.reply('You cannot register youself without a username! Please create a telegram username before registering.')
+        return;
+    }
+
     const chatType = ctx.update.message.chat.type;
+
+    ctx.reply(`@${tUser.username}, please follow these steps carefully to activate the bot!\n\n`+
+    `1. Click the link ${process.env.BOT_LINK}\n` +
+    `2. Press the 'START' / 'RESTART' button.\n\n` +
+    `Thank you in advance!`)
 
     if (chatType === 'supergroup') {
         const chatId = ctx.update.message.chat.id;
@@ -89,9 +101,9 @@ bot.entity("mention", async (ctx) => {
     const chatId = ctx.update.message.chat.id;
 
     if (chatType !== 'supergroup') return;
-    if (!message.includes(CONFIG.POINTS_EMOJI)) return;
+    if (!message.includes(CONFIG.EMOJI.POINTS)) return;
 
-    if (name.includes(CONFIG.POINTS_EMOJI)) name = name.split(emoji)[0]; 
+    if (name.includes(CONFIG.EMOJI.POINTS)) name = name.split(emoji)[0]; 
 
     const tUser = ctx.update.message.from;
 
@@ -109,9 +121,15 @@ bot.entity("mention", async (ctx) => {
             return;
         }
 
+        if (user.telegramId === tUser.id) {
+            tBot.deleteMessage(chatId, messageId)
+            tBot.sendMessage(user.telegramId, `Je kan jezelf geen G-Punten geven! ${CONFIG.EMOJI.CRAZY}`)
+            return;
+        }
+
         if (!canUserGivePoints(user, 1)) {
             tBot.deleteMessage(chatId, messageId)
-            tBot.sendMessage(user.telegramId, `Je hebt geen G-Punten meer! ${CONFIG.POINTS_EMOJI}${CONFIG.SAD_EMOJI}`)
+            tBot.sendMessage(user.telegramId, `Je hebt geen G-Punten meer! ${CONFIG.EMOJI.POINTS}${CONFIG.EMOJI.SAD}`)
             return;
         }
 
@@ -119,11 +137,11 @@ bot.entity("mention", async (ctx) => {
 
         givenUser.points++;
 
-        tBot.sendMessage(user.telegramId, `Je hebt een G-Punt gegeven aan @${givenUser.userName}! ${CONFIG.POINTS_EMOJI}\n\n` +
-        `Je hebt nu nog ${user.pointsToGive} G-Punten om weg te geven. ${CONFIG.POINTS_EMOJI}` )
+        tBot.sendMessage(user.telegramId, `Je hebt een G-Punt gegeven aan @${givenUser.userName}! ${CONFIG.EMOJI.POINTS}\n\n` +
+        `Je hebt nu nog ${user.pointsToGive} G-Punten om weg te geven. ${CONFIG.EMOJI.POINTS}` )
 
-        tBot.sendMessage(givenUser.telegramId, `Je hebt een G-Punt onvangen van @${user.userName}! ${CONFIG.POINTS_EMOJI}\n\n` +
-            `Je hebt nu ${givenUser.points} G-Punten. ${CONFIG.POINTS_EMOJI}` )
+        tBot.sendMessage(givenUser.telegramId, `Je hebt een G-Punt onvangen van @${user.userName}! ${CONFIG.EMOJI.POINTS}\n\n` +
+            `Je hebt nu ${givenUser.points} G-Punten. ${CONFIG.EMOJI.POINTS}` )
 
          await user.save();
          await givenUser.save()
@@ -150,14 +168,14 @@ async function registerUser(tUser, callback) {
             await newUser.save()
 
             console.log("Created new user for " + tUser.username);
-             if (callback) callback(`Je staat nu geregistreerd in ons systeem. Dit betekent dat jij G-Punten kan verdienen! ${CONFIG.POINTS_EMOJI}`)
+             if (callback) callback(`Je staat nu geregistreerd in ons systeem. Dit betekent dat jij G-Punten kan verdienen! ${CONFIG.EMOJI.POINTS}`)
 
             return;
         }
 
         console.log("already registered user")
 
-        if (callback) callback(`Je staat al in ons systeem! ${CONFIG.POINTS_EMOJI}`)
+        if (callback) callback(`Je staat al in ons systeem! ${CONFIG.EMOJI.POINTS}`)
     } catch (e) {
         console.log("Error while creating user " + tUser.username);
  
@@ -175,7 +193,7 @@ async function getCurrentToken(tUser, callback, noUserCallback) {
         user = await User.findOne({telegramId: tUser.id});
 
         if (!user) {
-            noUserCallback("No user found, register first!")
+            noUserCallback("No user found, use /register")
             return;
         }
 

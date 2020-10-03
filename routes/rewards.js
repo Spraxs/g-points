@@ -3,7 +3,7 @@ const router = express.Router()
 const Reward = require('../models/reward')
 const User = require('../models/user')
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif']
-const pointsEmoji = '💯'
+const CONFIG = require("../config")
 
 const { sendMessage, sendVariableMessage } = require('../telegram_bot')
 
@@ -36,8 +36,6 @@ router.get('/:id', async (req, res) => {
         const reward = await Reward.findById(req.params.id)/*.populate('author')*/.exec()
         const users = await User.find({})
         var user = await User.findById(req.session.userId);
-
-        user = null // TODO REMOVE
 
         res.render('rewards/show', { 
             reward: reward,
@@ -95,15 +93,38 @@ router.post('/:id/buy', async (req, res) => {
         // Get user that is paying for reward
         user = await User.findById(req.session.userId)
 
+        if (!user) {
+            const ERROR_MESSAGE = "User cannot be found"
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+            return;
+        }
+
         if (user.points < reward.cost) {
             const ERROR_MESSAGE = "You do not have enough g-points!"
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+            return;
+        }
 
+        if (!req.body.executor) {
+            const ERROR_MESSAGE = "You need to select a executor!"
             res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
             return;
         }
 
         // Get user that executes reward
         executedUser = await User.findById(req.body.executor)
+
+        if (!executedUser) {
+            const ERROR_MESSAGE = "You need to select a executor!"
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+            return;
+        }
+
+        if (executedUser.id === user.id) {
+            const ERROR_MESSAGE = "You cannot choose youself as executor!"
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+            return;
+        }
 
         user.points = user.points - reward.cost; // Subtract points from buyer
 
@@ -112,12 +133,12 @@ router.post('/:id/buy', async (req, res) => {
         // Send telegram messages
         sendVariableMessage(executedUser.telegramId, "Je hebt van @" + user.userName + " de opdracht gekregen om:\n\n" +
             reward.messageToExecutor + "\n\n" +
-            `@${user.userName} heeft hiervoor: ${reward.cost} ${pointsEmoji} betaald.`
+            `@${user.userName} heeft hiervoor: ${reward.cost} ${CONFIG.EMOJI.POINTS} betaald.`
             , "@" + user.userName)
 
         sendVariableMessage(user.telegramId, "Je hebt @" + executedUser.userName + " een opdracht gegeven!\n\n" +
             reward.messageToBuyer + "\n\n" +
-            `Je hebt hiervoor : ${reward.cost} ${pointsEmoji} betaald.`
+            `Je hebt hiervoor : ${reward.cost} ${CONFIG.EMOJI.POINTS} betaald.`
             , "@" + executedUser.userName)
 
         // Update web page
