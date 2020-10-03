@@ -110,14 +110,14 @@ router.post('/:id/buy', async (req, res) => {
         await user.save()
 
         // Send telegram messages
-        sendVariableMessage(executedUser.telegramId, "You've been assigned by @" + user.userName + " to complete the following task:\n\n" +
+        sendVariableMessage(executedUser.telegramId, "Je hebt van @" + user.userName + " de opdracht gekregen om:\n\n" +
             reward.messageToExecutor + "\n\n" +
-            `@${user.userName} paid: ${reward.cost} ${pointsEmoji}`
+            `@${user.userName} heeft hiervoor: ${reward.cost} ${pointsEmoji} betaald.`
             , "@" + user.userName)
 
-        sendVariableMessage(user.telegramId, "You've assigned a task to  @" + executedUser.userName + "!\n\n" +
+        sendVariableMessage(user.telegramId, "Je hebt @" + executedUser.userName + " een opdracht gegeven!\n\n" +
             reward.messageToBuyer + "\n\n" +
-            `You paid: ${reward.cost} ${pointsEmoji}`
+            `Je hebt hiervoor : ${reward.cost} ${pointsEmoji} betaald.`
             , "@" + executedUser.userName)
 
         // Update web page

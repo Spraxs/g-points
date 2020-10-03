@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    lastGivenPointDate: {
+    lastGivenPointsDate: {
         type: Date,
         required: true,
         default: Date.now
