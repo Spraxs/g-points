@@ -2,7 +2,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
 
-const User = require('./models/user')
+const SESSION_MAX_AGE = 1000 * 60 * 10;
 
 const express = require('express')
 const session = require('express-session')
@@ -24,7 +24,7 @@ app.use(expressLayouts)
 app.use(methodOverride('_method'))
 app.use(express.static('public'))
 
-app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 1000 * 60 * 10 }}))
+app.use(session({ secret: 'keyboard cat', cookie: { maxAge: SESSION_MAX_AGE }}))
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: false }))
 
 const mongoose = require('mongoose')

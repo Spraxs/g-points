@@ -117,12 +117,11 @@ async function registerUser(tUser, callback) {
 
             // Create new user
             const newUser = new User({
+                userName: tUser.username,
                 telegramId: tUser.id,
                 points: 0,
-                totalPoints: 0,
-                userName: tUser.username,
-                currentGivenPoints: 0,
-                totalGivenPoints: 0,
+                lastGivenPointDate: 0,
+                pointsToGive: 0,
             })
 
             await newUser.save()
@@ -169,4 +168,20 @@ async function getCurrentToken(tUser, callback, noUserCallback) {
     }
 }
 
+function sendMessage(telegramId, message) {
+    tBot.sendMessage(telegramId, message);
+}
+
+function sendVariableMessage(telegramId, message, value) {
+    const parts = message.split("%")
+
+    if (parts.length !== 3) {
+        throw new TypeError("Message contains no variables!")
+    }
+
+    sendMessage(telegramId, parts[0] + value + parts[2]);
+}
+
 bot.launch()
+
+module.exports = { sendMessage, sendVariableMessage }

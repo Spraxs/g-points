@@ -3,5 +3,24 @@
 <div>Price: <%= reward.cost %> 💯</div>
 <div>Description: <%= reward.description %></div>
 
+<form action="/rewards/<%= reward.id %>/buy" method="POST">
+    <div>
+        <label>Executor</label>
+        <select name="executor">
+            <% for (var i = 0; i < users.length; i++) { %>
+                <% const usr = users[i] %>
+                <% if (user && user.id === usr.id ) continue; %>
+                <% if (i === 0) { %> 
+                    <option selected label="<%= usr.userName %>" value="<%= usr.id %>"></option>
+                <% } else { %> 
+                    <option label="<%= usr.userName %>" value="<%= usr.id %>"></option>
+                <% } %> 
+            <% } %> 
+        </select>
+    </div>
+
+    <button type="submit">Buy</button>
+</form>
+
 <a href="/rewards/<%= reward.id %>/edit">Edit</a>
 <%- include('../partials/deleteForm', {url: `/rewards/${reward.id}`}) %>

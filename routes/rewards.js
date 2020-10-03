@@ -1,7 +1,11 @@
 const express = require('express')
 const router = express.Router()
 const Reward = require('../models/reward')
+const User = require('../models/user')
 const imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif']
+const pointsEmoji = '💯'
+
+const { sendMessage, sendVariableMessage } = require('../telegram_bot')
 
 // All Rewards Route
 router.get('/', async (req, res) => {
@@ -30,8 +34,18 @@ router.get('/new', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const reward = await Reward.findById(req.params.id)/*.populate('author')*/.exec()
+        const users = await User.find({})
+        var user = await User.findById(req.session.userId);
 
-        res.render('rewards/show', { reward: reward })
+        user = null // TODO REMOVE
+
+        res.render('rewards/show', { 
+            reward: reward,
+            users: users,
+            user: user,
+            errorMessage: req.query.errorMessage,
+            successMessage: req.query.successMessage
+        })
 
     } catch {
         res.redirect('/')
@@ -55,6 +69,8 @@ router.post('/', async (req, res) => {
         name: req.body.name,
         description: req.body.description,
         cost: req.body.cost,
+        messageToExecutor: req.body.messageToExecutor,
+        messageToBuyer: req.body.messageToBuyer
     })
 
     saveCover(reward, req.body.cover)
@@ -67,9 +83,64 @@ router.post('/', async (req, res) => {
     }
 })
 
+// Buy Reward Route
+router.post('/:id/buy', async (req, res) => {
+    let reward
+    let user
+    let executedUser
+
+    try {
+        reward = await Reward.findById(req.params.id)
+
+        // Get user that is paying for reward
+        user = await User.findById(req.session.userId)
+
+        if (user.points < reward.cost) {
+            const ERROR_MESSAGE = "You do not have enough g-points!"
+
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+            return;
+        }
+
+        // Get user that executes reward
+        executedUser = await User.findById(req.body.executor)
+
+        user.points = user.points - reward.cost; // Subtract points from buyer
+
+        await user.save()
+
+        // Send telegram messages
+        sendVariableMessage(executedUser.telegramId, "You've been assigned by @" + user.userName + " to complete the following task:\n\n" +
+            reward.messageToExecutor + "\n\n" +
+            `@${user.userName} paid: ${reward.cost} ${pointsEmoji}`
+            , "@" + user.userName)
+
+        sendVariableMessage(user.telegramId, "You've assigned a task to  @" + executedUser.userName + "!\n\n" +
+            reward.messageToBuyer + "\n\n" +
+            `You paid: ${reward.cost} ${pointsEmoji}`
+            , "@" + executedUser.userName)
+
+        // Update web page
+        const SUCCESS_MESSAGE = "You successfully bought this reward!"
+        res.redirect(`/rewards/${reward.id}/?successMessage=${SUCCESS_MESSAGE}`)
+    } catch (e) {
+        console.log(e);
+        if (reward != null) {
+            var ERROR_MESSAGE = "Something went wrong.";
+            if (!user) ERROR_MESSAGE += " Could not find user!"
+            if (!executedUser) ERROR_MESSAGE += " Could not find executing user!".
+
+            res.redirect(`/rewards/${reward.id}/?errorMessage=${ERROR_MESSAGE}`)
+        } else {
+            res.redirect('/')
+        }
+    }
+})
+
 // Update Reward Route
 router.put('/:id', async (req, res) => {
     let reward
+
 
     try {
         reward = await Reward.findById(req.params.id)
@@ -77,6 +148,8 @@ router.put('/:id', async (req, res) => {
         reward.name = req.body.name
         reward.description = req.body.description
         reward.cost = req.body.cost
+        reward.messageToExecutor = req.body.messageToExecutor
+        reward.messageToBuyer = req.body.messageToBuyer
 
         if (req.body.cover != null && req.body.cover !== '') {
             saveCover(reward, req.body.cover)
@@ -89,7 +162,7 @@ router.put('/:id', async (req, res) => {
         if (reward != null) {
             renderEditPage(res, reward, true)
         } else {
-            res.redirect('/')
+            res.redirect('/', { errorMessage: "Could not remove reward" })
         }
     }
 })

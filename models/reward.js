@@ -12,6 +12,14 @@ const rewardSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    messageToExecutor: {
+        type: String,
+        required: true
+    },
+    messageToBuyer: {
+        type: String,
+        required: true
+    },
     coverImage: {
         type: Buffer,
         required: true
@@ -19,7 +27,7 @@ const rewardSchema = new mongoose.Schema({
     coverImageType: {
         type: String,
         required: true
-    },
+    }
 })
 
 rewardSchema.virtual('coverImagePath').get(function () {

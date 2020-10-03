@@ -13,23 +13,15 @@ const userSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    totalPoints: {
-        type: Number,
-        required: true
-    },
-    lastGivenPointAt: {
+    lastGivenPointDate: {
         type: Date,
         required: true,
         default: Date.now
     },
-    currentGivenPoints: {
+    pointsToGive: {
         type: Number,
         required: true
     },
-    totalGivenPoints: {
-        type: Number,
-        required: true
-    }
 })
 
 module.exports = mongoose.model('User', userSchema)
