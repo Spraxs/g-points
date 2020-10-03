@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
     let users = []
 
     try {
-        users = await User.find().sort({ score: 'desc' }).limit(10).exec()
+        users = await User.find().sort({ points: 'desc' }).limit(10).exec()
     } catch {
         users = []
     }

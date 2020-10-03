@@ -121,7 +121,7 @@ bot.entity("mention", async (ctx) => {
             return;
         }
 
-        if (user.telegramId === tUser.id) {
+        if (user.id === givenUser.id) {
             tBot.deleteMessage(chatId, messageId)
             tBot.sendMessage(user.telegramId, `Je kan jezelf geen G-Punten geven! ${CONFIG.EMOJI.CRAZY}`)
             return;
