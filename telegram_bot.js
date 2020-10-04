@@ -53,6 +53,22 @@ bot.command('register', (ctx) => {
     })
 })
 
+bot.command('say', (ctx) => {
+    const chatId = ctx.update.message.chat.id;
+    const messageId = ctx.update.message.message_id;
+    tBot.deleteMessage(chatId, messageId)
+
+    const chatType = ctx.update.message.chat.type;
+
+    if (chatType !== 'supergroup') return;
+
+    var message = ctx.update.message.text;
+
+    message = message.replace('/say ', '');
+
+    ctx.reply(message);
+})
+
 bot.command('rewards', async (ctx) => {
     const chatType = ctx.update.message.chat.type;
 
@@ -69,13 +85,13 @@ bot.command('rewards', async (ctx) => {
         getCurrentToken(tUser, (currentToken, user) => {
 
             if (currentToken) {
-                tBot.sendMessage(user.telegramId, "Current session found: " + process.env.WEBSITE_DOMAIN + "auth?token=" + currentToken.token)
+                tBot.sendMessage(user.telegramId, process.env.WEBSITE_DOMAIN + "auth?token=" + currentToken.token)
                 return;
             }
 
             // If there is no current session
             TokenCache.createToken(user.id, (newToken) => {
-                tBot.sendMessage(user.telegramId, "New session created: " + process.env.WEBSITE_DOMAIN + "auth?token=" + newToken.token)
+                tBot.sendMessage(user.telegramId, process.env.WEBSITE_DOMAIN + "auth?token=" + newToken.token)
             })
             
 
@@ -229,7 +245,8 @@ function sendVariableMessage(telegramId, message, value) {
     const parts = message.split("%")
 
     if (parts.length !== 3) {
-        throw new TypeError("Message contains no variables!")
+        sendMessage(telegramId, message);
+        return;
     }
 
     sendMessage(telegramId, parts[0] + value + parts[2]);

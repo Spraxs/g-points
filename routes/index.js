@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
     let rewards = []
 
     try {
-        rewards = await Reward.find().sort({ createdAt: 'desc' }).limit(10).exec()
+        rewards = await Reward.find().sort({ cost: 'desc' }).limit(10).exec()
     } catch {
         rewards = []
     }

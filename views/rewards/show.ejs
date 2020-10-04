@@ -11,9 +11,9 @@
                 <% const usr = users[i] %>
                 <% if (user && user.id === usr.id ) continue; %>
                 <% if (i === 0) { %> 
-                    <option selected label="<%= usr.userName %>" value="<%= usr.id %>"></option>
+                    <option selected value="<%= usr.id %>"><%= usr.userName %></option>
                 <% } else { %> 
-                    <option label="<%= usr.userName %>" value="<%= usr.id %>"></option>
+                    <option value="<%= usr.id %>"><%= usr.userName %></option>
                 <% } %> 
             <% } %> 
         </select>
